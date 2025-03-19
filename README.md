@@ -1,4 +1,5 @@
 # Atividade-de-Comparacao-de-Algoritmos-de-Ordenacao
+Alunos: Gabriel Ramos, Gabriela Oliviera, Isabela Lenert
 
 # Código-Fonte Documentado e Organizado
 
