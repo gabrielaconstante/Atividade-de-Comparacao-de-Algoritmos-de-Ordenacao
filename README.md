@@ -42,9 +42,11 @@ A seguir estão as métricas coletadas para cada algoritmo de ordenação, em um
 
 ## Descrição da Ferramenta Utilizada para Logs e Análise dos Resultados
 
-O OpenTelemetry foi utilizado para monitoramento e rastreamento de execução. Ele permite registrar e analisar o tempo de execução dos algoritmos, coletando métricas como tempo de execução, número de comparações e trocas, além de facilitar a análise em tempo real.
+O OpenTelemetry foi integrado ao sistema para realizar o monitoramento e rastreamento da execução. A ferramenta permite capturar métricas como o tempo de execução dos algoritmos, o número de comparações e trocas. Com isso, a visualização das métricas em tempo real fica mais facil.
 
-No código, o ConsoleSpanExporter foi usado para exportar os logs para o console. Isso proporciona visibilidade sobre cada operação realizada durante a execução dos testes.
+No código, o ConsoleSpanExporter foi utilizado para exportar os logs diretamente para o console, o que permite acompanhar cada operação realizada durante os testes. Para uma análise mais robusta, também foi configurado o JaegerExporter, que permite a exportação de dados para o Jaeger, uma plataforma de observabilidade popular, oferecendo uma visão mais aprofundada das execuções e dos tempos de resposta.
+
+Cada algoritmo de ordenação é envolvido em spans, que são gerados e exportados durante a execução. Além disso, o código captura informações adicionais, como o número de comparações, trocas e o tempo total de execução, ajudando a comparar a performance entre diferentes abordagens de ordenação.
 
 ## Conclusão: Qual Algoritmo Apresentou Melhor Desempenho em Diferentes Cenários?
 
