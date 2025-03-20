@@ -13,29 +13,23 @@ from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-# Gera um trace ID de 16 bytes no formato hexadecimal
 def generate_trace_id():
     return format(random.getrandbits(128), '032x')
 
-# Gera um span ID de 8 bytes no formato hexadecimal
 def generate_span_id():
     return format(random.getrandbits(64), '016x')
 
-# Trace ID para toda a execução
 TRACE_ID = generate_trace_id()
 SERVICE_NAME_VALUE = "sorting-service"
 
-# Lista para armazenar todos os spans gerados
 jaeger_spans = []
 
-# Configuração do trace provider com o Jaeger
 trace.set_tracer_provider(
     TracerProvider(
         resource=Resource.create({SERVICE_NAME: SERVICE_NAME_VALUE})
     )
 )
 
-# Configuração do Jaeger Exporter
 jaeger_exporter = JaegerExporter(
     agent_host_name="localhost",
     agent_port=6831,
@@ -44,7 +38,6 @@ jaeger_exporter = JaegerExporter(
 span_processor = BatchSpanProcessor(jaeger_exporter)
 trace.get_tracer_provider().add_span_processor(span_processor)
 
-# Exporter para console (debug)
 console_exporter = ConsoleSpanExporter()
 console_processor = SimpleSpanProcessor(console_exporter)
 trace.get_tracer_provider().add_span_processor(console_processor)
@@ -52,14 +45,12 @@ trace.get_tracer_provider().add_span_processor(console_processor)
 # Tracer
 tracer = trace.get_tracer(__name__)
 
-# Função para criar um span no formato Jaeger
 def create_jaeger_span(name, span_id, parent_span_id, start_time, end_time, tags=None, references=None):
     if tags is None:
         tags = []
     if references is None:
         references = []
     
-    # Adiciona tags padrão
     tags.extend([
         {"key": "span.kind", "type": "string", "value": "internal"},
         {"key": "service.name", "type": "string", "value": SERVICE_NAME_VALUE}
@@ -87,7 +78,6 @@ def create_jaeger_span(name, span_id, parent_span_id, start_time, end_time, tags
     
     return span
 
-# Função para gerar dados aleatórios
 def gerar_dados(tamanho=10000, nome_arquivo="dados.txt"):
     dados = [random.randint(0, 1000000) for _ in range(tamanho)]
     with open(nome_arquivo, "w") as f:
@@ -95,7 +85,6 @@ def gerar_dados(tamanho=10000, nome_arquivo="dados.txt"):
     print(f"Arquivo '{nome_arquivo}' criado com {tamanho} números.")
     return dados
 
-# Definindo a classe de Algoritmos de Ordenação
 class SortingAlgorithm(ABC):
     def __init__(self):
         self.comparisons = 0
@@ -115,29 +104,23 @@ class SortingAlgorithm(ABC):
         algorithm_name = self.__class__.__name__
         span_id = generate_span_id()
         
-        # Registrando tempo de início
         start_time = time.time()
         
-        # Tags específicas do algoritmo
         tags = [
             {"key": "algorithm.name", "type": "string", "value": algorithm_name},
             {"key": "data_size", "type": "int64", "value": len(data)}
         ]
         
-        # Executando o algoritmo
         sorted_data = self.sort(data.copy())
         
-        # Registrando tempo de fim
         end_time = time.time()
         
-        # Adicionando métricas às tags
         tags.extend([
             {"key": "metrics.comparisons", "type": "int64", "value": self.comparisons},
             {"key": "metrics.swaps", "type": "int64", "value": self.swaps},
             {"key": "execution_time_ms", "type": "float64", "value": (end_time - start_time) * 1000}
         ])
         
-        # Criando span para o Jaeger
         span = create_jaeger_span(
             f"{algorithm_name}.sort",
             span_id,
@@ -362,14 +345,12 @@ class SortingTester:
             algorithm_name = algorithm.__class__.__name__
             algo_span_id = generate_span_id()
             
-            # Definir o pai do algoritmo como o teste
             algorithm.parent_span_id = test_span_id
             
             times = []
             comparisons = []
             swaps = []
             
-            # Tags para o span do algoritmo
             algo_tags = [
                 {"key": "algorithm.name", "type": "string", "value": algorithm_name},
                 {"key": "test.repetitions", "type": "int64", "value": repetitions}
@@ -379,13 +360,10 @@ class SortingTester:
                 rep_start_time = time.time()
                 rep_span_id = generate_span_id()
                 
-                # Definir o pai temporariamente como o span da repetição
                 algorithm.parent_span_id = rep_span_id
                 
-                # Executar o algoritmo
                 sorted_data, time_taken, algo_exec_span_id = algorithm.measure_time(data)
                 
-                # Restaurar o pai para o algoritmo
                 algorithm.parent_span_id = algo_span_id
                 
                 times.append(time_taken)
@@ -394,7 +372,6 @@ class SortingTester:
                 
                 rep_end_time = time.time()
                 
-                # Criar span para a repetição
                 rep_span = create_jaeger_span(
                     f"{algorithm_name}.repetition.{rep+1}",
                     rep_span_id,
@@ -411,12 +388,10 @@ class SortingTester:
                 
                 jaeger_spans.append(rep_span)
             
-            # Calcular médias
             avg_time = sum(times) / len(times) if times else 0
             avg_comparisons = sum(comparisons) / len(comparisons) if comparisons else 0
             avg_swaps = sum(swaps) / len(swaps) if swaps else 0
             
-            # Adicionar médias às tags
             algo_tags.extend([
                 {"key": "metrics.avg_time_ms", "type": "float64", "value": avg_time},
                 {"key": "metrics.avg_comparisons", "type": "int64", "value": int(avg_comparisons)},
@@ -425,7 +400,6 @@ class SortingTester:
             
             algo_end_time = time.time()
             
-            # Criar span para o algoritmo
             algo_span = create_jaeger_span(
                 f"{algorithm_name}.benchmark",
                 algo_span_id,
@@ -437,13 +411,11 @@ class SortingTester:
             
             jaeger_spans.append(algo_span)
             
-            # Registro para saída do console
-            print(f"\n🔹 {algorithm_name} 🔹")
+            print(f"\n {algorithm_name} ")
             print(f"Tempo Médio: {avg_time:.2f} ms")
             print(f"Média de Comparações: {int(avg_comparisons)}")
             print(f"Média de Trocas: {int(avg_swaps)}")
             
-            # Adicionar aos resultados
             results.append({
                 "algorithm": algorithm_name,
                 "avg_time_ms": avg_time,
@@ -451,20 +423,16 @@ class SortingTester:
                 "avg_swaps": int(avg_swaps)
             })
         
-        # Atualizar o span do teste com o tempo de término
         test_end_time = time.time()
         test_span["duration"] = int((test_end_time - test_start_time) * 1000000)
         
         return results
 
-# Tamanho do conjunto de dados
 TAMANHO_DO_CONJUNTO = 10000
 
-# Gerar e carregar dados
 dados_gerados = gerar_dados(TAMANHO_DO_CONJUNTO)
 dados_teste = dados_gerados
 
-# Definir algoritmos a serem testados
 algoritmos = [
     BubbleSort(),
     BubbleSortOptimized(),
@@ -475,12 +443,10 @@ algoritmos = [
     TimSort()
 ]
 
-# Executar testes
 print(f"Iniciando testes com {len(algoritmos)} algoritmos em {TAMANHO_DO_CONJUNTO} elementos...")
 tester = SortingTester(algoritmos)
 results = tester.run_test(dados_teste)
 
-# Criar a estrutura completa do Jaeger JSON
 jaeger_data = {
     "data": [
         {
@@ -504,7 +470,6 @@ jaeger_data = {
     "errors": None
 }
 
-# Salvar JSON no formato do Jaeger
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 json_filename = f"jaeger_sorting_trace_{timestamp}.json"
 
@@ -513,12 +478,4 @@ with open(json_filename, "w") as f:
 
 print(f"\nArquivo JSON para importação no Jaeger criado: {json_filename}")
 print(f"Trace ID: {TRACE_ID}")
-print("\nPara usar este arquivo no Jaeger:")
-print("1. Acesse a interface do Jaeger (geralmente http://localhost:16686)")
-print("2. Vá para o menu 'Search' e clique em 'JSON File'")
-print("3. Selecione o arquivo JSON gerado")
-print("4. Clique em 'Upload JSON'")
-
-# Aguarde um momento para garantir que todos os exportadores terminaram
-print("\nAguardando para garantir que todos os spans foram processados...")
 time.sleep(3)
